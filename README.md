@@ -27,7 +27,8 @@ The flow was verified on a DGX Spark at `192.168.1.164` with:
     ├── vendor-mcporter-to-sandbox.sh
     ├── install-blender-skill.sh
     ├── run-sandbox-blender-smoke.sh
-    └── run-openclaw-agent-smoke.sh
+    ├── run-openclaw-agent-smoke.sh
+    └── stop-demo.sh
 ```
 
 ## 1. Stage the Repo on the Spark
@@ -215,6 +216,24 @@ Check services:
 nemoclaw blender-agent status
 tail -80 ~/nemoclaw-blender-demo/logs/blender.log
 tail -80 ~/nemoclaw-blender-demo/logs/mcp-proxy.log
+```
+
+Stop host-side demo services:
+
+```bash
+./scripts/stop-demo.sh
+```
+
+Stop Blender/MCP services and the in-sandbox OpenClaw gateway:
+
+```bash
+./scripts/stop-demo.sh --stop-gateway
+```
+
+Permanently remove the NemoClaw sandbox and its persistent volume:
+
+```bash
+./scripts/stop-demo.sh --destroy-sandbox
 ```
 
 Connect to the sandbox:
