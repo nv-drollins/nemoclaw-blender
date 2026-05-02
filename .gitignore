@@ -1,0 +1,6 @@
+assets/*.tgz
+assets/blender_mcp_addon.py
+__pycache__/
+*.pyc
+logs/
+mcporter-node/

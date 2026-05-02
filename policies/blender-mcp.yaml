@@ -1,0 +1,23 @@
+preset:
+  name: blender-mcp
+  description: "Allow the sandbox to reach the host-side Blender MCP proxy"
+network_policies:
+  blender_mcp:
+    name: blender_mcp
+    endpoints:
+      - host: "192.168.1.164"
+        port: 9877
+        protocol: rest
+        tls: passthrough
+        enforcement: enforce
+        access: full
+    binaries:
+      - { path: /usr/local/bin/python3* }
+      - { path: /usr/bin/python3* }
+      - { path: /usr/local/bin/python* }
+      - { path: /usr/bin/python* }
+      - { path: /usr/bin/node* }
+      - { path: /usr/local/bin/node* }
+      - { path: /usr/bin/curl* }
+      - { path: /bin/bash* }
+      - { path: /usr/bin/bash* }
