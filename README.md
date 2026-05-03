@@ -21,6 +21,7 @@ The flow was verified on a DGX Spark at `192.168.1.164` with:
 └── scripts/
     ├── onboard-nemoclaw.sh
     ├── install-host-prereqs.sh
+    ├── start-demo.sh
     ├── start-host-blender-mcp.sh
     ├── start-mcp-proxy.sh
     ├── apply-blender-policy.sh
@@ -209,6 +210,18 @@ CodexRedCube
 ```
 
 ## Useful Operations
+
+Start the demo after it has already been installed:
+
+```bash
+./scripts/start-demo.sh
+```
+
+Start and run an OpenClaw agent smoke check:
+
+```bash
+./scripts/start-demo.sh --smoke
+```
 
 Check services:
 
