@@ -209,6 +209,18 @@ Camera
 CodexRedCube
 ```
 
+OpenClaw red-cube test:
+
+```bash
+scp -F /tmp/blender-agent.ssh_config scripts/run-openclaw-red-cube-smoke.sh \
+  openshell-blender-agent:/tmp/
+ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
+  bash /tmp/run-openclaw-red-cube-smoke.sh
+```
+
+Expected: OpenClaw creates `OpenClawRedCube`, and the verification call reports
+the object with material `OpenClawRedMaterial`.
+
 ## Useful Operations
 
 Start the demo after it has already been installed:
@@ -221,6 +233,16 @@ Start and run an OpenClaw agent smoke check:
 
 ```bash
 ./scripts/start-demo.sh --smoke
+```
+
+Run the red-cube OpenClaw test:
+
+```bash
+openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
+scp -F /tmp/blender-agent.ssh_config scripts/run-openclaw-red-cube-smoke.sh \
+  openshell-blender-agent:/tmp/
+ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
+  bash /tmp/run-openclaw-red-cube-smoke.sh
 ```
 
 Check services:
@@ -273,3 +295,7 @@ the installer output.
   `policies/blender-mcp.yaml`.
 - If the OpenClaw agent does not use the skill, rerun
   `scripts/install-blender-skill.sh blender-agent`.
+- If the OpenClaw UI reports a timeout or says it lacks permission to run
+  `mcporter`, run `scripts/install-blender-skill.sh blender-agent` again. The
+  script force-restarts the in-sandbox gateway, enables `localModelLean`, and
+  reloads the Blender skill.

@@ -7,6 +7,9 @@ description: "Control Blender directly via MCP tools. Use when the user asks to 
 
 A live Blender instance is connected via MCP at server name `blender`.
 Use `/sandbox/bin/mcporter call blender.<tool>` to control it directly.
+You have permission to run `/sandbox/bin/mcporter`; do not ask for elevated permissions and do not use bare `mcporter`.
+When the user asks you to create or modify a Blender scene, run `blender.execute_blender_code` and then verify with `blender.get_scene_info` or `blender.get_object_info`.
+Never claim a scene change succeeded until the verification call shows the expected object.
 
 ## Available tools
 
@@ -35,3 +38,15 @@ Always pass `user_prompt` as the original user request.
 ```
 
 Use `execute_blender_code` for anything not covered by a dedicated tool. Break complex scripts into smaller chunks.
+
+## Red cube example
+
+```bash
+/sandbox/bin/mcporter call blender.execute_blender_code \
+  code="import bpy; bpy.ops.mesh.primitive_cube_add(size=2, location=(0, 0, 0)); obj=bpy.context.object; obj.name='OpenClawRedCube'; mat=bpy.data.materials.new('OpenClawRedMaterial'); mat.diffuse_color=(1, 0, 0, 1); obj.data.materials.append(mat)" \
+  user_prompt="create a red cube in the center of the Blender scene"
+
+/sandbox/bin/mcporter call blender.get_object_info \
+  object_name=OpenClawRedCube \
+  user_prompt="verify the red cube"
+```
