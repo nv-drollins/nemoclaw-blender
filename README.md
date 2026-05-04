@@ -32,20 +32,21 @@ The flow was verified on a DGX Spark with:
     └── stop-demo.sh
 ```
 
-## 1. Stage the Repo on the Spark
+## 1. Clone the Repo
 
-Clone or copy this repo to:
-
-```bash
-/home/nvidia/nemoclaw-blender-demo
-```
-
-Run all commands below on the DGX Spark as `nvidia`.
+Clone the repository on the target machine:
 
 ```bash
+git clone https://github.com/nv-drollins/nemoclaw-blender.git ~/nemoclaw-blender-demo
 cd ~/nemoclaw-blender-demo
-chmod +x scripts/*.sh
 ```
+
+The shell scripts are committed with executable permissions, so a normal
+`git clone` preserves the ability to run them directly.
+
+Run all commands below from this repo on the target machine. If you downloaded
+the project as a ZIP or copied it manually and the executable bits were lost,
+repair them with `chmod +x scripts/*.sh`.
 
 ## 2. Confirm the Local Model
 
