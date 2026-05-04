@@ -1,9 +1,9 @@
-# NemoClaw Blender Demo on DGX Spark
+# NemoClaw Blender Demo on GB10
 
-This repo installs and verifies a NemoClaw/OpenClaw sandbox that can control a
-host-side Blender instance through Blender MCP, `mcp-proxy`, and `mcporter`.
+This repo installs and runs a NemoClaw/OpenClaw sandbox that controls a
+host-side Blender session through Blender MCP, `mcp-proxy`, and `mcporter`.
 
-The flow was verified on a DGX Spark with:
+The flow was verified on a DGX Spark GB10 with:
 
 - Ubuntu 24.04.4 LTS on `aarch64`
 - Docker 29.2.1 with the NVIDIA container runtime
@@ -12,29 +12,44 @@ The flow was verified on a DGX Spark with:
 - `nemotron-3-nano:30b`
 - Blender 4.0.2
 
-## Layout
+The scripts also support a local x86 Ubuntu host with Docker, the NVIDIA
+container runtime, Ollama, and a desktop display.
 
-```text
-.
-├── blender-skill/SKILL.md
-├── policies/blender-mcp.yaml
-└── scripts/
-    ├── onboard-nemoclaw.sh
-    ├── install-host-prereqs.sh
-    ├── start-demo.sh
-    ├── start-host-blender-mcp.sh
-    ├── start-mcp-proxy.sh
-    ├── apply-blender-policy.sh
-    ├── vendor-mcporter-to-sandbox.sh
-    ├── install-blender-skill.sh
-    ├── run-sandbox-blender-smoke.sh
-    ├── run-openclaw-agent-smoke.sh
-    └── stop-demo.sh
+## Before You Begin
+
+Use a local Ubuntu machine with:
+
+- an NVIDIA GPU and working NVIDIA driver
+- Docker and the NVIDIA container runtime
+- Ollama running on `127.0.0.1:11434`
+- a local desktop display for Blender
+- passwordless `sudo` for package installation
+
+Quick checks:
+
+```bash
+nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu24.04 nvidia-smi
+ollama list
 ```
 
-## 1. Clone the Repo
+## Quick Path
 
-Clone the repository on the target machine:
+Run everything from the target machine that will display Blender.
+
+```bash
+git clone https://github.com/nv-drollins/nemoclaw-blender.git ~/nemoclaw-blender-demo
+cd ~/nemoclaw-blender-demo
+ollama pull nemotron-3-nano:30b
+./scripts/install-host-prereqs.sh
+NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
+./scripts/start-demo.sh --smoke
+```
+
+After that, open the OpenClaw UI, run the Blender prompt, and use
+`./scripts/stop-demo.sh` when you are done.
+
+## 1. Clone the Repo
 
 ```bash
 git clone https://github.com/nv-drollins/nemoclaw-blender.git ~/nemoclaw-blender-demo
@@ -42,31 +57,43 @@ cd ~/nemoclaw-blender-demo
 ```
 
 The shell scripts are committed with executable permissions, so a normal
-`git clone` preserves the ability to run them directly.
+`git clone` lets you run them directly. If you downloaded a ZIP or copied the
+files manually, repair the permissions:
 
-Run all commands below from this repo on the target machine. If you downloaded
-the project as a ZIP or copied it manually and the executable bits were lost,
-repair them with `chmod +x scripts/*.sh`.
+```bash
+chmod +x scripts/*.sh
+```
+
+Run the rest of this guide from the repo root.
 
 ## 2. Confirm the Local Model
+
+This demo uses `nemotron-3-nano:30b` through Ollama.
 
 ```bash
 ollama list
 ```
 
-This guide uses:
-
-```text
-nemotron-3-nano:30b
-```
-
-If it is missing:
+If the model is missing:
 
 ```bash
 ollama pull nemotron-3-nano:30b
 ```
 
-## 3. Install and Onboard NemoClaw
+## 3. Install Host Prerequisites
+
+```bash
+./scripts/install-host-prereqs.sh
+```
+
+This installs Ubuntu Blender, installs `uv/uvx`, and downloads the Blender MCP
+add-on to `assets/blender_mcp_addon.py`.
+
+You do not need to install the add-on manually inside Blender. The startup
+script launches Blender with `scripts/start_blender_mcp.py`, which loads and
+registers the downloaded add-on for that Blender session.
+
+## 4. Install and Onboard NemoClaw
 
 ```bash
 NEMOCLAW_SANDBOX_NAME=blender-agent \
@@ -74,12 +101,12 @@ NEMOCLAW_MODEL=nemotron-3-nano:30b \
 ./scripts/onboard-nemoclaw.sh
 ```
 
-`scripts/onboard-nemoclaw.sh` also forces the selected `NEMOCLAW_MODEL`
-during NemoClaw's initial Ollama model pre-pull. This prevents large-memory x86
-hosts from auto-selecting `nemotron-3-super:120b` when this demo is configured
-for `nemotron-3-nano:30b`.
+The onboarding script forces the selected `NEMOCLAW_MODEL` during NemoClaw's
+initial Ollama model pre-pull. This prevents large-memory x86 hosts from
+auto-selecting `nemotron-3-super:120b` when this demo is configured for
+`nemotron-3-nano:30b`.
 
-Verify:
+Verify the sandbox:
 
 ```bash
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
@@ -89,157 +116,75 @@ nemoclaw blender-agent doctor --json
 
 Expected: sandbox `Ready`, provider `ollama-local`, inference healthy.
 
-## 4. Install Host-Side Blender and uv
+## 5. Start and Configure the Demo
 
 ```bash
-./scripts/install-host-prereqs.sh
+./scripts/start-demo.sh
 ```
 
-The script installs Ubuntu Blender, installs `uv/uvx`, and downloads
-`ahujasid/blender-mcp`'s `addon.py` into `assets/blender_mcp_addon.py`.
-You do not need to install the add-on manually in Blender; the next step starts
-Blender with `scripts/start_blender_mcp.py`, which loads and registers the
-downloaded add-on for that Blender session.
+This one command starts and configures the working demo:
 
-## 5. Start Blender MCP on the Host
+- starts Blender MCP on `localhost:9876`
+- starts `mcp-proxy` on `0.0.0.0:9877`
+- applies the sandbox policy that allows access to Blender MCP
+- installs or repairs `mcporter` inside the sandbox
+- installs the Blender skill and restarts the OpenClaw gateway
+- verifies that the sandbox can read the Blender scene
 
-Run this from the repo root on the local desktop host:
+To start and run a basic smoke check:
 
 ```bash
-DISPLAY=:1 \
-XAUTHORITY=/run/user/1000/gdm/Xauthority \
+./scripts/start-demo.sh --smoke
+```
+
+The scripts are designed for a local desktop host with a display. The normal
+Blender MCP command is:
+
+```bash
 ./scripts/start-host-blender-mcp.sh
 ```
 
-Blender MCP listens on `localhost:9876`. Verify the local socket and log from
-the repo root:
+Blender MCP listens on `localhost:9876`. Check it from the repo root:
 
 ```bash
 ss -ltn | grep 9876
 tail -40 ./logs/blender.log
 ```
 
-Expected log lines include:
-
-```text
-BlenderMCP server started on localhost:9876
-BLENDER_MCP_READY localhost:9876
-```
-
-If the `ss` command has no output, Blender MCP is not listening yet. Check
-`./logs/blender.log`; the start script also prints the absolute log path and
-tails the log automatically if Blender MCP does not become ready.
-
-## 6. Start the MCP HTTP/SSE Proxy
-
-```bash
-./scripts/start-mcp-proxy.sh
-```
-
-Verify:
+`mcp-proxy` listens on `9877`:
 
 ```bash
 ss -ltn | grep 9877
-tail -80 logs/mcp-proxy.log
+tail -80 ./logs/mcp-proxy.log
 ```
 
-Expected: `mcp-proxy` serving `http://0.0.0.0:9877/sse` and connected to
-Blender at `localhost:9876`.
+If a service does not become ready, the startup script prints the absolute log
+path and tails the log automatically.
 
-## 7. Allow Sandbox Egress to Blender MCP
+## 6. Run the Demo
 
-The script auto-detects the host IPv4 address and injects it into the policy
-before applying it. Override detection when needed with
-`NEMOCLAW_BLENDER_HOST_IP`.
+Get the OpenClaw gateway token:
 
 ```bash
-./scripts/apply-blender-policy.sh blender-agent
+nemoclaw blender-agent gateway-token --quiet
 ```
 
-Override example:
+Open the dashboard URL shown by:
 
 ```bash
-NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/apply-blender-policy.sh blender-agent
+nemoclaw blender-agent status
 ```
 
-Verify the live OpenShell policy contains `blender_mcp`:
-
-```bash
-openshell policy get blender-agent --full | grep -n blender -C 3
-```
-
-## 8. Install mcporter in the Sandbox
-
-The `mcporter-0.9.0.tgz` release package does not include all runtime
-dependencies. The reliable path is to install its dependencies on the Spark
-host, then copy the resulting `node_modules` into `/sandbox`.
-
-```bash
-./scripts/vendor-mcporter-to-sandbox.sh blender-agent
-```
-
-This also auto-detects the host IP and writes the sandbox mcporter config to
-use `http://<host-ip>:9877/sse`. You can override with:
-
-```bash
-NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/vendor-mcporter-to-sandbox.sh blender-agent
-```
-
-Verify from the sandbox:
-
-```bash
-openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
-ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
-  /sandbox/bin/mcporter call blender.get_scene_info user_prompt=scene-check
-```
-
-Expected: JSON describing the Blender scene.
-
-## 9. Install the Blender Skill
-
-```bash
-./scripts/install-blender-skill.sh blender-agent
-```
-
-This copies `blender-skill/SKILL.md` into
-`/sandbox/.openclaw/skills/blender/SKILL.md` and restarts the OpenClaw gateway
-with `/sandbox/bin` on `PATH`.
-
-## 10. Smoke Tests
-
-Direct sandbox-to-Blender MCP test:
-
-```bash
-openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
-scp -F /tmp/blender-agent.ssh_config scripts/run-sandbox-blender-smoke.sh \
-  openshell-blender-agent:/tmp/
-ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
-  bash /tmp/run-sandbox-blender-smoke.sh
-```
-
-Expected: Blender creates `CodexRedCube`, and scene info reports it.
-
-OpenClaw agent test:
-
-```bash
-scp -F /tmp/blender-agent.ssh_config scripts/run-openclaw-agent-smoke.sh \
-  openshell-blender-agent:/tmp/
-ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
-  bash /tmp/run-openclaw-agent-smoke.sh
-```
-
-Expected output:
+Use the token to sign in, then try this prompt:
 
 ```text
-Cube
-Light
-Camera
-CodexRedCube
+Using mcporter to connect to blender, create a red cube in the center of the blender scene.
 ```
 
-OpenClaw red-cube test:
+You can also run the included red-cube smoke test:
 
 ```bash
+openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
 scp -F /tmp/blender-agent.ssh_config scripts/run-openclaw-red-cube-smoke.sh \
   openshell-blender-agent:/tmp/
 ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
@@ -249,52 +194,35 @@ ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
 Expected: OpenClaw creates `OpenClawRedCube`, and the verification call reports
 the object with material `OpenClawRedMaterial`.
 
-## Useful Operations
-
-Start the demo after it has already been installed:
-
-```bash
-./scripts/start-demo.sh
-```
-
-`start-demo.sh` auto-detects the host IP and refreshes both the sandbox policy
-and mcporter config. For unusual network setups:
-
-```bash
-NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/start-demo.sh
-```
-
-Start and run an OpenClaw agent smoke check:
-
-```bash
-./scripts/start-demo.sh --smoke
-```
-
-Run the red-cube OpenClaw test:
-
-```bash
-openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
-scp -F /tmp/blender-agent.ssh_config scripts/run-openclaw-red-cube-smoke.sh \
-  openshell-blender-agent:/tmp/
-ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
-  bash /tmp/run-openclaw-red-cube-smoke.sh
-```
-
-Check services:
+## 7. Check Services
 
 ```bash
 nemoclaw blender-agent status
+ss -ltn | grep 9876
+ss -ltn | grep 9877
 tail -80 ./logs/blender.log
 tail -80 ./logs/mcp-proxy.log
 ```
 
-Stop host-side demo services:
+Direct sandbox-to-Blender check:
+
+```bash
+openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
+ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
+  /sandbox/bin/mcporter call blender.get_scene_info user_prompt=scene-check
+```
+
+Expected: JSON describing the Blender scene.
+
+## 8. Stop the Demo
+
+Stop host-side Blender and MCP services:
 
 ```bash
 ./scripts/stop-demo.sh
 ```
 
-Stop Blender/MCP services and the in-sandbox OpenClaw gateway:
+Stop host-side services and the in-sandbox OpenClaw gateway:
 
 ```bash
 ./scripts/stop-demo.sh --stop-gateway
@@ -306,31 +234,60 @@ Permanently remove the NemoClaw sandbox and its persistent volume:
 ./scripts/stop-demo.sh --destroy-sandbox
 ```
 
+## 9. Restart the Demo
+
+After a normal stop:
+
+```bash
+./scripts/start-demo.sh
+```
+
+After stopping the in-sandbox gateway too:
+
+```bash
+./scripts/start-demo.sh
+```
+
+After destroying the sandbox, recreate it first:
+
+```bash
+NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
+./scripts/start-demo.sh
+```
+
+## Useful Overrides
+
+Use a different sandbox name:
+
+```bash
+NEMOCLAW_SANDBOX_NAME=my-blender-agent ./scripts/onboard-nemoclaw.sh
+NEMOCLAW_SANDBOX_NAME=my-blender-agent ./scripts/start-demo.sh
+```
+
+Override host IP auto-detection for unusual network setups:
+
+```bash
+NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/start-demo.sh
+```
+
 Connect to the sandbox:
 
 ```bash
 nemoclaw blender-agent connect
 ```
 
-Open the OpenClaw UI:
-
-```bash
-nemoclaw blender-agent gateway-token --quiet
-```
-
-Use the token with the dashboard URL from `nemoclaw blender-agent status` or
-the installer output.
-
 ## Troubleshooting
 
+- If `ss -ltn | grep 9876` has no output, Blender MCP is not listening. Check
+  `./logs/blender.log`.
+- If `ss -ltn | grep 9877` has no output, `mcp-proxy` is not listening. Check
+  `./logs/mcp-proxy.log`.
+- If `mcporter` cannot reach Blender, check host ports `9876` and `9877`, then
+  rerun `./scripts/start-demo.sh`.
+- If OpenShell logs show policy denials for `<host-ip>:9877`, rerun
+  `./scripts/start-demo.sh` or `./scripts/apply-blender-policy.sh blender-agent`.
+- If the OpenClaw UI reports a timeout or says it lacks permission to run
+  `mcporter`, rerun `./scripts/start-demo.sh`. It refreshes `mcporter`, installs
+  the Blender skill, and restarts the in-sandbox gateway.
 - If `openshell sandbox exec` hangs, use the SSH config path:
   `openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config`.
-- If `mcporter` cannot reach Blender, check host ports `9876` and `9877`.
-- If OpenShell logs show policy denials for `<host-ip>:9877`, rerun
-  `scripts/apply-blender-policy.sh blender-agent`.
-- If the OpenClaw agent does not use the skill, rerun
-  `scripts/install-blender-skill.sh blender-agent`.
-- If the OpenClaw UI reports a timeout or says it lacks permission to run
-  `mcporter`, run `scripts/install-blender-skill.sh blender-agent` again. The
-  script force-restarts the in-sandbox gateway, enables `localModelLean`, and
-  reloads the Blender skill.
