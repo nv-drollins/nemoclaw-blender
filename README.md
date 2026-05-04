@@ -35,7 +35,9 @@ ollama list
 
 ## Quick Path
 
-Run everything from the target machine that will display Blender.
+If the checks in Before You Begin pass, the commands below install, configure,
+start, and smoke-test the demo. Run everything from the target machine that
+will display Blender.
 
 ```bash
 git clone https://github.com/nv-drollins/nemoclaw-blender.git
@@ -47,8 +49,23 @@ NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
 ./scripts/show-openclaw-dashboard.sh
 ```
 
-After that, open the OpenClaw UI, run the Blender prompt, and use
-`./scripts/stop-demo.sh` when you are done.
+When Blender opens, press `N` if the right sidebar is hidden, open the
+`BlenderMCP` tab, and click `Connect to Claude` if it is not already connected.
+
+Open the OpenClaw dashboard URL printed by `show-openclaw-dashboard.sh`, sign in
+with the gateway token if prompted, and send this as a new prompt:
+
+```text
+Using mcporter to connect to blender, create a red cube in the center of the blender scene.
+```
+
+Blender's default workspace already has a gray cube at the center of the scene.
+Delete that cube first if you want the red cube to be immediately visible; if
+both cubes occupy the same spot, the gray cube can hide the newly-created red
+one.
+
+Use `./scripts/stop-demo.sh` when you are done. For more detail or finer
+control, follow the numbered sections below.
 
 ## 1. Clone the Repo
 
@@ -190,6 +207,11 @@ this prompt:
 ```text
 Using mcporter to connect to blender, create a red cube in the center of the blender scene.
 ```
+
+Blender's default workspace already has a gray cube at the center of the scene.
+Delete that cube first if you want the red cube to be immediately visible; if
+both cubes occupy the same spot, the gray cube can hide the newly-created red
+one.
 
 You can also run the included red-cube smoke test:
 
