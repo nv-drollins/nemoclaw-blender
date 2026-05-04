@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SPARK_IP="${1:-192.168.1.164}"
+HOST_IP="${1:-${NEMOCLAW_BLENDER_HOST_IP:-${SPARK_IP:-}}}"
 TGZ="${2:-/tmp/mcporter-0.9.0.tgz}"
+
+if [ -z "$HOST_IP" ]; then
+  echo "Host IP required. Pass it as arg 1 or set NEMOCLAW_BLENDER_HOST_IP." >&2
+  exit 1
+fi
 
 if [ ! -f "$TGZ" ]; then
   echo "mcporter package not found: $TGZ" >&2
@@ -32,7 +37,7 @@ cat >"$HOME/.mcporter/mcporter.json" <<EOF
   "mcpServers": {
     "blender": {
       "type": "http",
-      "baseUrl": "http://$SPARK_IP:9877/sse"
+      "baseUrl": "http://$HOST_IP:9877/sse"
     }
   }
 }

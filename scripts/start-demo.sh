@@ -3,13 +3,14 @@ set -euo pipefail
 
 ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$HOME/nemoclaw-blender-demo}"
 SANDBOX="${NEMOCLAW_SANDBOX_NAME:-blender-agent}"
-SPARK_IP="${SPARK_IP:-192.168.1.164}"
+HOST_IP_ARG="${NEMOCLAW_BLENDER_HOST_IP:-${SPARK_IP:-}}"
 RUN_SMOKE=0
 RESTART_GATEWAY=1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<EOF
-Usage: $0 [--sandbox NAME] [--spark-ip IP] [--smoke] [--skip-gateway-restart]
+Usage: $0 [--sandbox NAME] [--host-ip IP] [--smoke] [--skip-gateway-restart]
 
 Starts an already-installed NemoClaw Blender demo:
   - verifies the NemoClaw sandbox exists
@@ -21,7 +22,8 @@ Starts an already-installed NemoClaw Blender demo:
 
 Options:
   --sandbox NAME           NemoClaw sandbox name. Default: $SANDBOX
-  --spark-ip IP            Host IP used by sandbox mcporter config. Default: $SPARK_IP
+  --host-ip IP             Host IP used by sandbox mcporter config. Default: auto-detect
+  --spark-ip IP            Deprecated alias for --host-ip.
   --smoke                  Run non-mutating and agent smoke checks after start.
   --skip-gateway-restart   Do not restart the in-sandbox OpenClaw gateway.
 EOF
@@ -33,8 +35,8 @@ while [ "$#" -gt 0 ]; do
       SANDBOX="${2:?missing sandbox name}"
       shift
       ;;
-    --spark-ip)
-      SPARK_IP="${2:?missing Spark IP}"
+    --host-ip|--spark-ip)
+      HOST_IP_ARG="${2:?missing host IP}"
       shift
       ;;
     --smoke) RUN_SMOKE=1 ;;
@@ -46,6 +48,11 @@ while [ "$#" -gt 0 ]; do
 done
 
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
+
+# shellcheck source=detect-host-ip.sh
+. "$SCRIPT_DIR/detect-host-ip.sh"
+
+HOST_IP="$(resolve_host_ip "$HOST_IP_ARG")"
 
 need() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -85,17 +92,19 @@ echo "[2/6] Starting mcp-proxy"
 "$ROOT/scripts/start-mcp-proxy.sh"
 
 echo "[3/6] Applying Blender MCP policy"
-"$ROOT/scripts/apply-blender-policy.sh" "$SANDBOX"
+"$ROOT/scripts/apply-blender-policy.sh" "$SANDBOX" "$HOST_IP"
 
 SSH_CONFIG="/tmp/${SANDBOX}.ssh_config"
 openshell sandbox ssh-config "$SANDBOX" > "$SSH_CONFIG"
 
 echo "[4/6] Checking mcporter"
 if ! ssh -F "$SSH_CONFIG" "openshell-$SANDBOX" test -x /sandbox/bin/mcporter; then
-  "$ROOT/scripts/vendor-mcporter-to-sandbox.sh" "$SANDBOX" "$SPARK_IP"
+  "$ROOT/scripts/vendor-mcporter-to-sandbox.sh" "$SANDBOX" "$HOST_IP"
 else
+  scp -F "$SSH_CONFIG" "$ROOT/scripts/repair-sandbox-mcporter-wrapper.sh" "openshell-$SANDBOX:/tmp/"
+  ssh -F "$SSH_CONFIG" "openshell-$SANDBOX" bash /tmp/repair-sandbox-mcporter-wrapper.sh "$HOST_IP"
   ssh -F "$SSH_CONFIG" "openshell-$SANDBOX" /sandbox/bin/mcporter --help >/dev/null
-  echo "mcporter already available in sandbox $SANDBOX"
+  echo "mcporter already available in sandbox $SANDBOX; config refreshed for $HOST_IP"
 fi
 
 echo "[5/6] Installing Blender skill"
@@ -123,7 +132,7 @@ Demo is running.
 
 Sandbox: $SANDBOX
 Blender MCP: localhost:9876
-mcp-proxy: http://$SPARK_IP:9877/sse
+mcp-proxy: http://$HOST_IP:9877/sse
 
 OpenClaw token:
   nemoclaw $SANDBOX gateway-token --quiet

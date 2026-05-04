@@ -3,7 +3,7 @@
 This repo installs and verifies a NemoClaw/OpenClaw sandbox that can control a
 host-side Blender instance through Blender MCP, `mcp-proxy`, and `mcporter`.
 
-The flow was verified on a DGX Spark at `192.168.1.164` with:
+The flow was verified on a DGX Spark with:
 
 - Ubuntu 24.04.4 LTS on `aarch64`
 - Docker 29.2.1 with the NVIDIA container runtime
@@ -135,10 +135,18 @@ Blender at `localhost:9876`.
 
 ## 7. Allow Sandbox Egress to Blender MCP
 
-Edit `policies/blender-mcp.yaml` if your Spark IP is not `192.168.1.164`.
+The script auto-detects the host IPv4 address and injects it into the policy
+before applying it. Override detection when needed with
+`NEMOCLAW_BLENDER_HOST_IP`.
 
 ```bash
 ./scripts/apply-blender-policy.sh blender-agent
+```
+
+Override example:
+
+```bash
+NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/apply-blender-policy.sh blender-agent
 ```
 
 Verify the live OpenShell policy contains `blender_mcp`:
@@ -154,7 +162,14 @@ dependencies. The reliable path is to install its dependencies on the Spark
 host, then copy the resulting `node_modules` into `/sandbox`.
 
 ```bash
-./scripts/vendor-mcporter-to-sandbox.sh blender-agent 192.168.1.164
+./scripts/vendor-mcporter-to-sandbox.sh blender-agent
+```
+
+This also auto-detects the host IP and writes the sandbox mcporter config to
+use `http://<host-ip>:9877/sse`. You can override with:
+
+```bash
+NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/vendor-mcporter-to-sandbox.sh blender-agent
 ```
 
 Verify from the sandbox:
@@ -229,6 +244,13 @@ Start the demo after it has already been installed:
 ./scripts/start-demo.sh
 ```
 
+`start-demo.sh` auto-detects the host IP and refreshes both the sandbox policy
+and mcporter config. For unusual network setups:
+
+```bash
+NEMOCLAW_BLENDER_HOST_IP=<host-ip> ./scripts/start-demo.sh
+```
+
 Start and run an OpenClaw agent smoke check:
 
 ```bash
@@ -291,8 +313,8 @@ the installer output.
 - If `openshell sandbox exec` hangs, use the SSH config path:
   `openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config`.
 - If `mcporter` cannot reach Blender, check host ports `9876` and `9877`.
-- If OpenShell logs show policy denials for `192.168.1.164:9877`, reapply
-  `policies/blender-mcp.yaml`.
+- If OpenShell logs show policy denials for `<host-ip>:9877`, rerun
+  `scripts/apply-blender-policy.sh blender-agent`.
 - If the OpenClaw agent does not use the skill, rerun
   `scripts/install-blender-skill.sh blender-agent`.
 - If the OpenClaw UI reports a timeout or says it lacks permission to run
