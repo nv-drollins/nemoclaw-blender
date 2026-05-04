@@ -2,7 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+# shellcheck source=resolve-demo-root.sh
+. "$SCRIPT_DIR/resolve-demo-root.sh"
+ROOT="$(resolve_demo_root "$SCRIPT_DIR")"
 PORT="${BLENDER_MCP_PROXY_PORT:-9877}"
 
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"

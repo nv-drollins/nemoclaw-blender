@@ -2,7 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+# shellcheck source=resolve-demo-root.sh
+. "$SCRIPT_DIR/resolve-demo-root.sh"
+ROOT="$(resolve_demo_root "$SCRIPT_DIR")"
 SANDBOX="${NEMOCLAW_SANDBOX_NAME:-blender-agent}"
 HOST_IP_ARG="${NEMOCLAW_BLENDER_HOST_IP:-${SPARK_IP:-}}"
 RUN_SMOKE=0

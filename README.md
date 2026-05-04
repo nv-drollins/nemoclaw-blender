@@ -38,8 +38,8 @@ ollama list
 Run everything from the target machine that will display Blender.
 
 ```bash
-git clone https://github.com/nv-drollins/nemoclaw-blender.git ~/nemoclaw-blender-demo
-cd ~/nemoclaw-blender-demo
+git clone https://github.com/nv-drollins/nemoclaw-blender.git
+cd nemoclaw-blender
 ollama pull nemotron-3-nano:30b
 ./scripts/install-host-prereqs.sh
 NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
@@ -52,8 +52,8 @@ After that, open the OpenClaw UI, run the Blender prompt, and use
 ## 1. Clone the Repo
 
 ```bash
-git clone https://github.com/nv-drollins/nemoclaw-blender.git ~/nemoclaw-blender-demo
-cd ~/nemoclaw-blender-demo
+git clone https://github.com/nv-drollins/nemoclaw-blender.git
+cd nemoclaw-blender
 ```
 
 The shell scripts are committed with executable permissions, so a normal
@@ -289,5 +289,8 @@ nemoclaw blender-agent connect
 - If the OpenClaw UI reports a timeout or says it lacks permission to run
   `mcporter`, rerun `./scripts/start-demo.sh`. It refreshes `mcporter`, installs
   the Blender skill, and restarts the in-sandbox gateway.
+- If a script looks for `/home/nvidia/nemoclaw-blender-demo` while your checkout
+  is somewhere else, pull the latest repo and clear any stale override:
+  `unset NEMOCLAW_BLENDER_DEMO_ROOT`.
 - If `openshell sandbox exec` hangs, use the SSH config path:
   `openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config`.
