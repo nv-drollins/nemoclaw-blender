@@ -74,6 +74,11 @@ NEMOCLAW_MODEL=nemotron-3-nano:30b \
 ./scripts/onboard-nemoclaw.sh
 ```
 
+`scripts/onboard-nemoclaw.sh` also forces the selected `NEMOCLAW_MODEL`
+during NemoClaw's initial Ollama model pre-pull. This prevents large-memory x86
+hosts from auto-selecting `nemotron-3-super:120b` when this demo is configured
+for `nemotron-3-nano:30b`.
+
 Verify:
 
 ```bash
