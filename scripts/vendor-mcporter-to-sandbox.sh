@@ -3,12 +3,12 @@ set -euo pipefail
 
 SANDBOX="${1:-${NEMOCLAW_SANDBOX_NAME:-blender-agent}}"
 HOST_IP_ARG="${2:-${NEMOCLAW_BLENDER_HOST_IP:-${SPARK_IP:-}}}"
-ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$HOME/nemoclaw-blender-demo}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 MCPORTER_VERSION="${MCPORTER_VERSION:-0.9.0}"
 SSH_CONFIG="/tmp/${SANDBOX}.ssh_config"
 INSTALL_DIR="$ROOT/mcporter-node"
 TGZ="$ROOT/assets/mcporter-${MCPORTER_VERSION}.tgz"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
 

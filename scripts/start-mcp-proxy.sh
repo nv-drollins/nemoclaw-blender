@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$HOME/nemoclaw-blender-demo}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PORT="${BLENDER_MCP_PROXY_PORT:-9877}"
 
 export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
@@ -10,6 +11,7 @@ export BLENDER_PORT="${BLENDER_PORT:-9876}"
 export DISABLE_TELEMETRY="${DISABLE_TELEMETRY:-true}"
 
 mkdir -p "$ROOT/logs"
+echo "mcp-proxy log: $ROOT/logs/mcp-proxy.log"
 
 if ss -ltn | grep -q ":$PORT "; then
   echo "mcp-proxy already listening on 0.0.0.0:$PORT"
@@ -29,4 +31,7 @@ for _ in $(seq 1 45); do
 done
 
 echo "mcp-proxy did not become ready; see $ROOT/logs/mcp-proxy.log" >&2
+if [ -f "$ROOT/logs/mcp-proxy.log" ]; then
+  tail -80 "$ROOT/logs/mcp-proxy.log" >&2
+fi
 exit 1

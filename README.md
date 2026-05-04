@@ -97,11 +97,13 @@ Expected: sandbox `Ready`, provider `ollama-local`, inference healthy.
 
 The script installs Ubuntu Blender, installs `uv/uvx`, and downloads
 `ahujasid/blender-mcp`'s `addon.py` into `assets/blender_mcp_addon.py`.
+You do not need to install the add-on manually in Blender; the next step starts
+Blender with `scripts/start_blender_mcp.py`, which loads and registers the
+downloaded add-on for that Blender session.
 
 ## 5. Start Blender MCP on the Host
 
-The Spark used for verification had an active X11 desktop at `DISPLAY=:1` and
-`XAUTHORITY=/run/user/1000/gdm/Xauthority`.
+Run this from the repo root on the local desktop host:
 
 ```bash
 DISPLAY=:1 \
@@ -109,11 +111,12 @@ XAUTHORITY=/run/user/1000/gdm/Xauthority \
 ./scripts/start-host-blender-mcp.sh
 ```
 
-Verify the socket:
+Blender MCP listens on `localhost:9876`. Verify the local socket and log from
+the repo root:
 
 ```bash
 ss -ltn | grep 9876
-tail -40 logs/blender.log
+tail -40 ./logs/blender.log
 ```
 
 Expected log lines include:
@@ -122,6 +125,10 @@ Expected log lines include:
 BlenderMCP server started on localhost:9876
 BLENDER_MCP_READY localhost:9876
 ```
+
+If the `ss` command has no output, Blender MCP is not listening yet. Check
+`./logs/blender.log`; the start script also prints the absolute log path and
+tails the log automatically if Blender MCP does not become ready.
 
 ## 6. Start the MCP HTTP/SSE Proxy
 
@@ -277,8 +284,8 @@ Check services:
 
 ```bash
 nemoclaw blender-agent status
-tail -80 ~/nemoclaw-blender-demo/logs/blender.log
-tail -80 ~/nemoclaw-blender-demo/logs/mcp-proxy.log
+tail -80 ./logs/blender.log
+tail -80 ./logs/mcp-proxy.log
 ```
 
 Stop host-side demo services:

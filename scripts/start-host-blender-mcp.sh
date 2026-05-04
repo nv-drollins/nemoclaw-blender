@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$HOME/nemoclaw-blender-demo}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 PORT="${BLENDER_MCP_PORT:-9876}"
 DISPLAY="${DISPLAY:-:1}"
 XAUTHORITY="${XAUTHORITY:-/run/user/$(id -u)/gdm/Xauthority}"
@@ -12,6 +13,7 @@ export DISPLAY
 export XAUTHORITY
 
 mkdir -p "$ROOT/logs"
+echo "Blender MCP log: $ROOT/logs/blender.log"
 
 if ss -ltn | grep -q ":$PORT "; then
   echo "Blender MCP socket already listening on localhost:$PORT"
@@ -31,4 +33,7 @@ for _ in $(seq 1 30); do
 done
 
 echo "Blender MCP did not become ready; see $ROOT/logs/blender.log" >&2
+if [ -f "$ROOT/logs/blender.log" ]; then
+  tail -80 "$ROOT/logs/blender.log" >&2
+fi
 exit 1

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$HOME/nemoclaw-blender-demo}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${NEMOCLAW_BLENDER_DEMO_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 SANDBOX="${NEMOCLAW_SANDBOX_NAME:-blender-agent}"
 HOST_IP_ARG="${NEMOCLAW_BLENDER_HOST_IP:-${SPARK_IP:-}}"
 RUN_SMOKE=0
 RESTART_GATEWAY=1
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<EOF
