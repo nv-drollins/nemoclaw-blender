@@ -44,6 +44,7 @@ ollama pull nemotron-3-nano:30b
 ./scripts/install-host-prereqs.sh
 NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
 ./scripts/start-demo.sh --smoke
+./scripts/show-openclaw-dashboard.sh
 ```
 
 After that, open the OpenClaw UI, run the Blender prompt, and use
@@ -131,6 +132,12 @@ This one command starts and configures the working demo:
 - installs the Blender skill and restarts the OpenClaw gateway
 - verifies that the sandbox can read the Blender scene
 
+When Blender opens, confirm the Blender MCP panel is connected:
+
+1. In the Blender 3D Viewport, press `N` if the right sidebar is hidden.
+2. Open the `BlenderMCP` tab.
+3. Click `Connect to Claude` if it is not already connected.
+
 To start and run a basic smoke check:
 
 ```bash
@@ -163,19 +170,22 @@ path and tails the log automatically.
 
 ## 6. Run the Demo
 
-Get the OpenClaw gateway token:
+Print the OpenClaw dashboard URL from inside the sandbox:
 
 ```bash
-nemoclaw blender-agent gateway-token --quiet
+./scripts/show-openclaw-dashboard.sh
 ```
 
-Open the dashboard URL shown by:
+The helper runs `openclaw dashboard --no-open` inside the sandbox using
+OpenShell SSH. It also prints the token command. To print the token in the same
+terminal:
 
 ```bash
-nemoclaw blender-agent status
+./scripts/show-openclaw-dashboard.sh --show-token
 ```
 
-Use the token to sign in, then try this prompt:
+Open the dashboard URL, use the gateway token to sign in if prompted, then try
+this prompt:
 
 ```text
 Using mcporter to connect to blender, create a red cube in the center of the blender scene.
@@ -276,10 +286,19 @@ Connect to the sandbox:
 nemoclaw blender-agent connect
 ```
 
+Run a one-off command inside the sandbox from the host:
+
+```bash
+openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config
+ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
+  openclaw dashboard --no-open
+```
+
 ## Troubleshooting
 
 - If `ss -ltn | grep 9876` has no output, Blender MCP is not listening. Check
-  `./logs/blender.log`.
+  `./logs/blender.log`, then in Blender open the `BlenderMCP` sidebar tab and
+  click `Connect to Claude`.
 - If `ss -ltn | grep 9877` has no output, `mcp-proxy` is not listening. Check
   `./logs/mcp-proxy.log`.
 - If `mcporter` cannot reach Blender, check host ports `9876` and `9877`, then

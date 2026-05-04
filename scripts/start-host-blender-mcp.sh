@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/resolve-demo-root.sh"
 ROOT="$(resolve_demo_root "$SCRIPT_DIR")"
 PORT="${BLENDER_MCP_PORT:-9876}"
+READY_TIMEOUT="${BLENDER_MCP_READY_TIMEOUT:-120}"
 DISPLAY="${DISPLAY:-:1}"
 XAUTHORITY="${XAUTHORITY:-/run/user/$(id -u)/gdm/Xauthority}"
 
@@ -22,11 +23,22 @@ if ss -ltn | grep -q ":$PORT "; then
   exit 0
 fi
 
+cat <<EOF
+Starting Blender MCP.
+
+When Blender opens, confirm the Blender MCP panel is connected:
+  1. In the Blender 3D Viewport, press N if the right sidebar is hidden.
+  2. Open the BlenderMCP tab.
+  3. Click "Connect to Claude" if it is not already connected.
+
+Waiting up to ${READY_TIMEOUT}s for localhost:$PORT.
+EOF
+
 nohup blender --python "$ROOT/scripts/start_blender_mcp.py" \
   >"$ROOT/logs/blender.log" 2>&1 &
 echo "$!" >"$ROOT/logs/blender.pid"
 
-for _ in $(seq 1 30); do
+for _ in $(seq 1 "$READY_TIMEOUT"); do
   if ss -ltn | grep -q ":$PORT "; then
     echo "Blender MCP socket listening on localhost:$PORT"
     exit 0

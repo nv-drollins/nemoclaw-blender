@@ -138,4 +138,7 @@ mcp-proxy: http://$HOST_IP:9877/sse
 
 OpenClaw token:
   nemoclaw $SANDBOX gateway-token --quiet
+
+OpenClaw dashboard:
+  ./scripts/show-openclaw-dashboard.sh
 EOF
