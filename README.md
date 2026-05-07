@@ -25,6 +25,11 @@ Use a local Ubuntu machine with:
 - a local desktop display for Blender
 - passwordless `sudo` for package installation
 
+Do not run the NemoClaw onboarding step from an active Python virtual
+environment. The onboarding script strips active venv settings before invoking
+the NemoClaw installer because the upstream installer currently uses a
+`pip3 install --user` path for its optional model router.
+
 Quick checks:
 
 ```bash
@@ -32,6 +37,10 @@ nvidia-smi
 docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu24.04 nvidia-smi
 ollama list
 ```
+
+On GPU hosts that use Docker CDI device injection, `onboard-nemoclaw.sh`
+generates `/etc/cdi/nvidia.yaml` automatically if the NVIDIA CDI specs are
+missing.
 
 ## Quick Path
 
@@ -333,5 +342,10 @@ ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
 - If a script looks for `/home/nvidia/nemoclaw-blender-demo` while your checkout
   is somewhere else, pull the latest repo and clear any stale override:
   `unset NEMOCLAW_BLENDER_DEMO_ROOT`.
+- If onboarding fails with `unresolvable CDI devices nvidia.com/gpu=all`, run:
+  `sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`, then verify with
+  `nvidia-ctk cdi list`.
+- If onboarding fails with `Can not perform a '--user' install` from `pip`, run
+  `deactivate` and rerun `NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh`.
 - If `openshell sandbox exec` hangs, use the SSH config path:
   `openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config`.

@@ -4,6 +4,35 @@ set -euo pipefail
 SANDBOX="${NEMOCLAW_SANDBOX_NAME:-blender-agent}"
 MODEL="${NEMOCLAW_MODEL:-nemotron-3-nano:30b}"
 OLLAMA_WRAPPER_DIR="$(mktemp -d)"
+
+drop_path_entry() {
+  local remove="$1"
+  local entry new_path=""
+
+  IFS=: read -r -a entries <<<"$PATH"
+  for entry in "${entries[@]}"; do
+    if [ "$entry" = "$remove" ]; then
+      continue
+    fi
+
+    if [ -z "$new_path" ]; then
+      new_path="$entry"
+    else
+      new_path="$new_path:$entry"
+    fi
+  done
+
+  printf '%s\n' "$new_path"
+}
+
+if [ -n "${VIRTUAL_ENV:-}" ]; then
+  echo "Ignoring active Python virtualenv during NemoClaw install: $VIRTUAL_ENV"
+  PATH="$(drop_path_entry "$VIRTUAL_ENV/bin")"
+  export PATH
+  unset VIRTUAL_ENV
+fi
+unset PIP_REQUIRE_VIRTUALENV PYTHONHOME PYTHONPATH
+
 REAL_OLLAMA_BIN="${NEMOCLAW_OLLAMA_BIN:-}"
 if [ -z "$REAL_OLLAMA_BIN" ]; then
   REAL_OLLAMA_BIN="$(command -v ollama 2>/dev/null || true)"
@@ -24,6 +53,25 @@ export NEMOCLAW_LOCAL_INFERENCE_TIMEOUT="${NEMOCLAW_LOCAL_INFERENCE_TIMEOUT:-300
 if [ -n "$REAL_OLLAMA_BIN" ]; then
   export NEMOCLAW_OLLAMA_BIN="$REAL_OLLAMA_BIN"
 fi
+
+ensure_nvidia_cdi_specs() {
+  if ! command -v nvidia-ctk >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if nvidia-ctk cdi list 2>/dev/null | grep -q 'nvidia.com/gpu=all'; then
+    return 0
+  fi
+
+  echo "Generating NVIDIA CDI specs for OpenShell GPU passthrough"
+  sudo mkdir -p /etc/cdi
+  sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+
+  if ! nvidia-ctk cdi list 2>/dev/null | grep -q 'nvidia.com/gpu=all'; then
+    echo "NVIDIA CDI specs were not generated correctly; run 'nvidia-ctk cdi list' for details." >&2
+    exit 1
+  fi
+}
 
 cat >"$OLLAMA_WRAPPER_DIR/ollama" <<'EOF'
 #!/usr/bin/env bash
@@ -85,6 +133,8 @@ exec "$real_ollama" "$@"
 EOF
 chmod +x "$OLLAMA_WRAPPER_DIR/ollama"
 export PATH="$OLLAMA_WRAPPER_DIR:$PATH"
+
+ensure_nvidia_cdi_specs
 
 echo "Onboarding sandbox '$SANDBOX' with Ollama model '$MODEL'"
 curl -fsSL https://www.nvidia.com/nemoclaw.sh -o /tmp/nemoclaw.sh
