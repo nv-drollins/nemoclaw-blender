@@ -56,8 +56,8 @@ cd nemoclaw-blender
 ollama pull nemotron-3-nano:30b
 ./scripts/install-host-prereqs.sh
 NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
-./scripts/start-demo.sh --smoke
-./scripts/show-openclaw-dashboard.sh
+./scripts/start-demo.sh
+./scripts/show-openclaw-dashboard.sh --show-token
 ```
 
 When Blender opens, press `N` if the right sidebar is hidden, open the
