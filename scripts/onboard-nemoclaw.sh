@@ -37,6 +37,10 @@ REAL_OLLAMA_BIN="${NEMOCLAW_OLLAMA_BIN:-}"
 if [ -z "$REAL_OLLAMA_BIN" ]; then
   REAL_OLLAMA_BIN="$(command -v ollama 2>/dev/null || true)"
 fi
+REAL_PIP3_BIN="${NEMOCLAW_PIP3_BIN:-}"
+if [ -z "$REAL_PIP3_BIN" ]; then
+  REAL_PIP3_BIN="$(command -v pip3 2>/dev/null || true)"
+fi
 
 cleanup() {
   rm -rf "$OLLAMA_WRAPPER_DIR"
@@ -52,6 +56,9 @@ export NEMOCLAW_NON_INTERACTIVE=1
 export NEMOCLAW_LOCAL_INFERENCE_TIMEOUT="${NEMOCLAW_LOCAL_INFERENCE_TIMEOUT:-300}"
 if [ -n "$REAL_OLLAMA_BIN" ]; then
   export NEMOCLAW_OLLAMA_BIN="$REAL_OLLAMA_BIN"
+fi
+if [ -n "$REAL_PIP3_BIN" ]; then
+  export NEMOCLAW_PIP3_BIN="$REAL_PIP3_BIN"
 fi
 
 ensure_nvidia_cdi_specs() {
@@ -132,6 +139,41 @@ fi
 exec "$real_ollama" "$@"
 EOF
 chmod +x "$OLLAMA_WRAPPER_DIR/ollama"
+if [ -n "$REAL_PIP3_BIN" ]; then
+  cat >"$OLLAMA_WRAPPER_DIR/pip3" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+should_skip_model_router_install() {
+  local arg saw_user=0 saw_router=0
+
+  [ "${NEMOCLAW_PROVIDER:-}" != "routed" ] || return 1
+  [ "${1:-}" = "install" ] || return 1
+
+  for arg in "$@"; do
+    [ "$arg" = "--user" ] && saw_user=1
+    case "$arg" in
+      *llm-router*|*\[prefill,proxy\]*) saw_router=1 ;;
+    esac
+  done
+
+  [ "$saw_user" -eq 1 ] && [ "$saw_router" -eq 1 ]
+}
+
+if should_skip_model_router_install "$@"; then
+  echo "Skipping optional NemoClaw model router install for provider '${NEMOCLAW_PROVIDER:-ollama}'" >&2
+  exit 0
+fi
+
+if [ -z "${NEMOCLAW_PIP3_BIN:-}" ] || [ ! -x "$NEMOCLAW_PIP3_BIN" ]; then
+  echo "real pip3 binary not found" >&2
+  exit 127
+fi
+
+exec "$NEMOCLAW_PIP3_BIN" "$@"
+EOF
+  chmod +x "$OLLAMA_WRAPPER_DIR/pip3"
+fi
 export PATH="$OLLAMA_WRAPPER_DIR:$PATH"
 
 ensure_nvidia_cdi_specs

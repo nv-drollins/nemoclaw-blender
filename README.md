@@ -27,8 +27,10 @@ Use a local Ubuntu machine with:
 
 Do not run the NemoClaw onboarding step from an active Python virtual
 environment. The onboarding script strips active venv settings before invoking
-the NemoClaw installer because the upstream installer currently uses a
-`pip3 install --user` path for its optional model router.
+the NemoClaw installer and skips the upstream installer's optional model-router
+`pip3 install --user` step for this Ollama-based demo. That avoids Ubuntu
+24.04's PEP 668 `externally-managed-environment` warning for an unused router
+component.
 
 Quick checks:
 
@@ -345,7 +347,10 @@ ssh -F /tmp/blender-agent.ssh_config openshell-blender-agent \
 - If onboarding fails with `unresolvable CDI devices nvidia.com/gpu=all`, run:
   `sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`, then verify with
   `nvidia-ctk cdi list`.
-- If onboarding fails with `Can not perform a '--user' install` from `pip`, run
-  `deactivate` and rerun `NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh`.
+- If onboarding prints `externally-managed-environment` or `Can not perform a
+  '--user' install` from `pip`, pull the latest repo and rerun
+  `NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh`. Older
+  runs may print this while skipping NemoClaw's optional model router, but the
+  Ollama-based Blender demo does not require that component.
 - If `openshell sandbox exec` hangs, use the SSH config path:
   `openshell sandbox ssh-config blender-agent > /tmp/blender-agent.ssh_config`.
