@@ -25,6 +25,22 @@ Use a local Ubuntu machine with:
 - a local desktop display for Blender
 - passwordless `sudo` for package installation
 
+### Configure Docker GPU runtime
+
+DGX Spark systems may include the NVIDIA Container Toolkit out of the box, but
+Docker still needs the NVIDIA runtime configured:
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Optional verification:
+
+```bash
+sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
+```
+
 ### Install and expose Ollama
 
 The NemoClaw sandbox must be able to reach the host Ollama server. Install
