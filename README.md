@@ -15,6 +15,14 @@ The flow was verified on a DGX Spark GB10 with:
 The scripts also support a local x86 Ubuntu host with Docker, the NVIDIA
 container runtime, Ollama, and a desktop display.
 
+## Sudo Prompts
+
+First-time setup may need sudo for host packages, Docker/NVIDIA toolkit configuration, or setup preflight checks. Passwordless sudo is not required, but install commands must run from an interactive terminal so sudo can prompt. When installing over SSH, use:
+
+```bash
+ssh -t nvidia@<spark-ip>
+```
+
 ## Before You Begin
 
 Use a local Ubuntu machine with:
