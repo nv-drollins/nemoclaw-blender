@@ -8,12 +8,15 @@ ROOT="$(resolve_demo_root "$SCRIPT_DIR")"
 PORT="${BLENDER_MCP_PORT:-9876}"
 READY_TIMEOUT="${BLENDER_MCP_READY_TIMEOUT:-120}"
 DISPLAY="${DISPLAY:-:0}"
-XAUTHORITY="${XAUTHORITY:-/run/user/$(id -u)/gdm/Xauthority}"
 
 export BLENDER_MCP_ADDON="${BLENDER_MCP_ADDON:-$ROOT/assets/blender_mcp_addon.py}"
 export BLENDER_MCP_PORT="$PORT"
 export DISPLAY
-export XAUTHORITY
+if [ -n "${XAUTHORITY:-}" ]; then
+  export XAUTHORITY
+elif [ -f "/run/user/$(id -u)/gdm/Xauthority" ]; then
+  export XAUTHORITY="/run/user/$(id -u)/gdm/Xauthority"
+fi
 
 mkdir -p "$ROOT/logs"
 echo "Blender MCP log: $ROOT/logs/blender.log"

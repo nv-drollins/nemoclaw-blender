@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 SANDBOX="${NEMOCLAW_SANDBOX_NAME:-blender-agent}"
-MODEL="${NEMOCLAW_MODEL:-nemotron-3-nano:30b}"
+MODEL="${NEMOCLAW_MODEL:-qwen3.6:27b}"
 INSTALL_REF="${NEMOCLAW_INSTALL_REF:-latest}"
 OLLAMA_WRAPPER_DIR="$(mktemp -d)"
 

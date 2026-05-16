@@ -9,7 +9,7 @@ The flow was verified on a DGX Spark GB10 with:
 - Docker 29.2.1 with the NVIDIA container runtime
 - Node 22.22.2 and npm 10.9.7
 - Ollama 0.22.1 on `127.0.0.1:11434`
-- `nemotron-3-nano:30b`
+- `qwen3.6:27b`
 - Blender 4.0.2
 
 The scripts also support a local x86 Ubuntu host with Docker, the NVIDIA
@@ -165,9 +165,9 @@ the monitor attached and will display Blender.
 ```bash
 git clone https://github.com/nv-drollins/nemoclaw-blender.git
 cd nemoclaw-blender
-ollama pull nemotron-3-nano:30b
+ollama pull qwen3.6:27b
 ./scripts/install-host-prereqs.sh
-NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
+./scripts/onboard-nemoclaw.sh
 ./scripts/start-demo.sh
 ./scripts/show-openclaw-dashboard.sh --show-token
 ```
@@ -209,7 +209,9 @@ Run the rest of this guide from the repo root.
 
 ## 2. Confirm the Local Model
 
-This demo uses `nemotron-3-nano:30b` through Ollama by default.
+This demo uses `qwen3.6:27b` through Ollama by default. In DGX Spark testing it
+was significantly faster than `nemotron-3-nano:30b` and gave more detailed
+Blender tool-use responses.
 
 ```bash
 ollama list
@@ -218,18 +220,18 @@ ollama list
 If the model is missing:
 
 ```bash
-ollama pull nemotron-3-nano:30b
+ollama pull qwen3.6:27b
 ```
 
 If onboarding fails with a message such as `Chat Completions did not return a
 tool call` or `leaked tool calls into plain text content`, the issue is usually
 the local runtime's structured-tool-call behavior rather than Blender itself.
-A different Ollama model can help if it reliably returns OpenAI-compatible
-`tool_calls`; for example:
+Another Ollama model can help if it reliably returns OpenAI-compatible
+`tool_calls`; for example, the slower Nemotron fallback:
 
 ```bash
-ollama pull qwen3.6:35b
-NEMOCLAW_MODEL=qwen3.6:35b ./scripts/onboard-nemoclaw.sh
+ollama pull nemotron-3-nano:30b
+NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
 ```
 
 For the most reliable tool-heavy demos, use a runtime that exposes structured
@@ -253,14 +255,13 @@ registers the downloaded add-on for that Blender session.
 
 ```bash
 NEMOCLAW_SANDBOX_NAME=blender-agent \
-NEMOCLAW_MODEL=nemotron-3-nano:30b \
 ./scripts/onboard-nemoclaw.sh
 ```
 
 The onboarding script forces the selected `NEMOCLAW_MODEL` during NemoClaw's
 initial Ollama model pre-pull. This prevents large-memory x86 hosts from
 auto-selecting `nemotron-3-super:120b` when this demo is configured for
-`nemotron-3-nano:30b`.
+`qwen3.6:27b`.
 
 ### NemoClaw onboarding variables
 
@@ -270,7 +271,7 @@ official NemoClaw installer with `--non-interactive`,
 
 | Variable | Default | Available options / examples | Purpose |
 |---|---:|---|---|
-| `NEMOCLAW_MODEL` | `nemotron-3-nano:30b` | Any Ollama model name from `ollama list`; examples: `nemotron-3-nano:30b`, `qwen3.6:35b` | Selects the local Ollama model NemoClaw/OpenClaw should use. |
+| `NEMOCLAW_MODEL` | `qwen3.6:27b` | Any Ollama model name from `ollama list`; examples: `qwen3.6:27b`, `nemotron-3-nano:30b`, `qwen3.6:35b` | Selects the local Ollama model NemoClaw/OpenClaw should use. |
 | `NEMOCLAW_SANDBOX_NAME` | `blender-agent` | Any valid sandbox name, for example `my-blender-agent` | Names the NemoClaw sandbox. Use a unique name to avoid replacing another sandbox. |
 | `NEMOCLAW_POLICY_TIER` | `balanced` | `restricted`, `balanced`, `open` | Selects NemoClaw's baseline policy tier during onboarding. |
 | `NEMOCLAW_INSTALL_REF` | unset (latest) | `v0.0.38`, `v0.0.43`, or another published installer ref | Pins the official NemoClaw installer for repeatable demo testing. Leave unset for latest. |
@@ -449,7 +450,7 @@ After stopping the in-sandbox gateway too:
 After destroying the sandbox, recreate it first:
 
 ```bash
-NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh
+./scripts/onboard-nemoclaw.sh
 ./scripts/start-demo.sh
 ```
 
@@ -521,7 +522,7 @@ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
   `nvidia-ctk cdi list`.
 - If onboarding prints `externally-managed-environment` or `Can not perform a
   '--user' install` from `pip`, pull the latest repo and rerun
-  `NEMOCLAW_MODEL=nemotron-3-nano:30b ./scripts/onboard-nemoclaw.sh`. Older
+  `./scripts/onboard-nemoclaw.sh`. Older
   runs may print this while skipping NemoClaw's optional model router, but the
   Ollama-based Blender demo does not require that component.
 - If `openshell sandbox exec` hangs, use the SSH config path:
