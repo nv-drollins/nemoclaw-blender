@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(resolve_demo_root "$SCRIPT_DIR")"
 PORT="${BLENDER_MCP_PORT:-9876}"
 READY_TIMEOUT="${BLENDER_MCP_READY_TIMEOUT:-120}"
-DISPLAY="${DISPLAY:-:1}"
+DISPLAY="${DISPLAY:-:0}"
 XAUTHORITY="${XAUTHORITY:-/run/user/$(id -u)/gdm/Xauthority}"
 
 export BLENDER_MCP_ADDON="${BLENDER_MCP_ADDON:-$ROOT/assets/blender_mcp_addon.py}"

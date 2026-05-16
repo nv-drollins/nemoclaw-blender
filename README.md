@@ -31,7 +31,7 @@ Use a local Ubuntu machine with:
 - Docker and the NVIDIA container runtime
 - Ollama running on `127.0.0.1:11434`
 - a local desktop display for Blender
-- passwordless `sudo` for package installation
+- sudo access for package installation; passwordless sudo is not required
 
 ### Enable Docker access without sudo
 
@@ -159,8 +159,8 @@ missing.
 ## Quick Path
 
 If the checks in Before You Begin pass, the commands below install, configure,
-start, and smoke-test the demo. Run everything from the target machine that
-will display Blender.
+start, and smoke-test the demo. Run them from the Spark or workstation that has
+the monitor attached and will display Blender.
 
 ```bash
 git clone https://github.com/nv-drollins/nemoclaw-blender.git
@@ -209,7 +209,7 @@ Run the rest of this guide from the repo root.
 
 ## 2. Confirm the Local Model
 
-This demo uses `nemotron-3-nano:30b` through Ollama.
+This demo uses `nemotron-3-nano:30b` through Ollama by default.
 
 ```bash
 ollama list
@@ -220,6 +220,21 @@ If the model is missing:
 ```bash
 ollama pull nemotron-3-nano:30b
 ```
+
+If onboarding fails with a message such as `Chat Completions did not return a
+tool call` or `leaked tool calls into plain text content`, the issue is usually
+the local runtime's structured-tool-call behavior rather than Blender itself.
+A different Ollama model can help if it reliably returns OpenAI-compatible
+`tool_calls`; for example:
+
+```bash
+ollama pull qwen3.6:35b
+NEMOCLAW_MODEL=qwen3.6:35b ./scripts/onboard-nemoclaw.sh
+```
+
+For the most reliable tool-heavy demos, use a runtime that exposes structured
+tool calls explicitly, such as vLLM or SGLang with the appropriate tool-call
+parser.
 
 ## 3. Install Host Prerequisites
 
